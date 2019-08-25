@@ -2,8 +2,9 @@ from datetime import datetime
 import json
 import os
 from pprint import pformat
+from urllib.parse import parse_qs, urlparse
 from bottle import get, post, run, request
-from bottle import HTTPResponse
+from bottle import HTTPResponse, template
 from bottle import auth_basic
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -21,6 +22,12 @@ AT = os.environ.get("ACCESS_TOKEN")
 AS = os.environ.get("ACCESS_TOKEN_SECRET")
 
 TWEETS_EP = "https://api.twitter.com/1.1/statuses/user_timeline.json"
+REQUEST_TOKEN_EP = "https://api.twitter.com/oauth/request_token"
+AUTHORIZE_EP = "https://api.twitter.com/oauth/authorize"
+ACCESS_TOKEN_EP = "https://api.twitter.com/oauth/access_token"
+VERIFY_EP = "https://api.twitter.com/1.1/account/verify_credentials.json"
+CALLBACK = "https://hacku-techlion.herokuapp.com/twitter/oauth-callback"
+TOP_URL = "https://hacku-techlion.herokuapp.com/dummy"
 
 
 def check(user, passwd):
@@ -58,7 +65,7 @@ def fetch_todays_tweets(username: str) -> list:
 
 
 def get_latest_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
-    ep = TWEETS_EP + f"?screen_name=yatabis_tg&trim_user=true"
+    ep = TWEETS_EP + f"&trim_user=true"
     if latest == 0:
         ep += "&count=200"
     else:
@@ -126,6 +133,39 @@ def get_twitter_today(username: str) -> HTTPResponse:
         else:
             body = req.json()
     return HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False), headers={"Content-Type": "application/json"})
+
+
+@get("/twitter/login")
+def twitter_login():
+    oauth_session = OAuth1Session(client_key=CK, client_secret=CS, callback_uri=CALLBACK)
+    oauth_session.fetch_request_token(REQUEST_TOKEN_EP)
+    authorization_url = oauth_session.authorization_url(AUTHORIZE_EP)
+    return HTTPResponse(status=302, headers={"Location": authorization_url})
+
+
+@get("/twitter/oauth-callback")
+def twitter_oauth_callback():
+    oauth_session = OAuth1Session(CK, CS)
+    oauth_session.parse_authorization_response(request.url)
+    token = oauth_session.fetch_access_token(ACCESS_TOKEN_EP)
+    oauth = OAuth1Session(CK, CS, token["oauth_token"], token["oauth_token_secret"])
+    req = oauth.get(VERIFY_EP)
+    if req.status_code != 200:
+        return HTTPResponse(status=req.status_code, body=req.json(), headers=req.headers)
+    user = req.json()
+    with open_pg() as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("insert into users values (%s, %s, %s, %s) on conflict (id) "
+                        "do update set twitter_access_token = %s, twitter_access_token_secret = %s",
+                        (user["id"], user["screen_name"], token["oauth_token"], token["oauth_token_secret"],
+                         token["oauth_token"], token["oauth_token_secret"]))
+        conn.commit()
+    return HTTPResponse(status=302, headers={"Location": TOP_URL})
+
+
+@get("/dummy")
+def dummy():
+    return template("dummy.html")
 
 
 if __name__ == '__main__':

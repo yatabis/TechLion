@@ -4,6 +4,7 @@ import os
 from pprint import pformat
 from bottle import get, post, run, request
 from bottle import HTTPResponse
+from bottle import auth_basic
 import psycopg2
 from psycopg2.extras import DictCursor
 from pytz import timezone
@@ -20,6 +21,10 @@ AT = os.environ.get("ACCESS_TOKEN")
 AS = os.environ.get("ACCESS_TOKEN_SECRET")
 
 TWEETS_EP = "https://api.twitter.com/1.1/statuses/user_timeline.json"
+
+
+def check(user, passwd):
+    return user == os.environ.get("USERNAME") and passwd == os.environ.get("PASSWORD")
 
 
 def open_pg():
@@ -102,6 +107,7 @@ def hello():
 
 
 @get("/twitter/today/<username>")
+@auth_basic(check)
 def get_twitter_today(username: str) -> HTTPResponse:
     token = fetch_token(username)
     if token is None:

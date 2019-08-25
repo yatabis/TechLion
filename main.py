@@ -65,12 +65,11 @@ def fetch_todays_tweets(username: str) -> list:
 
 
 def get_latest_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
-    ep = TWEETS_EP + f"&trim_user=true"
     if latest == 0:
-        ep += "&count=200"
+        q = {"count": 200}
     else:
-        ep += f"&since_id={latest}"
-    req = oauth.get(ep)
+        q = {"since_id": latest}
+    req = oauth.get(TWEETS_EP, params=q)
     if req.status_code != 200:
         return req, []
     tweets = []
@@ -83,6 +82,7 @@ def get_latest_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list
                 "text": tweet["text"],
                 "hashtags": [tag["text"] for tag in tweet["entities"]["hashtags"]],
                 "media": [media["media_url_https"] for media in tweet.get("extended_entities", dict()).get("media", list())],
+                "url": f"https://twitter.com/{tweet['user']['screen_name']}/status/{tweet['id']}",
                 "created_at": {
                     "year": created_at.year,
                     "month": created_at.month,

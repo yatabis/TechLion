@@ -38,6 +38,7 @@
 | text       | String        | ツイート内容        |
 | hashtags   | Array[String] | ハッシュタグの配列  |
 | media      | Array[String] | メディアのURLの配列 |
+| url        | Path          | 元ツイートのURL     |
 | created_at | Object        | 日時オブジェクト    |
 
 

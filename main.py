@@ -60,7 +60,7 @@ def fetch_todays_tweets(username: str) -> list:
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("select tweets from diary where twitter_name = %s and date = %s", (username, today))
-            tweets = json.loads(cur.fetchone()[0])
+            tweets = json.loads(cur.fetchone()[0]) if tweets is not None else None
     return tweets
 
 
@@ -109,7 +109,7 @@ def update_tweets(username: str, add_list: list) -> Tuple[Response, list]:
             cur.execute("insert into diary (twitter_name, date, tweets) values (%s, %s, %s) "
                         "on conflict (twitter_name, date) do update set tweets = %s",
                         (username, datetime.today().strftime("%Y%m%d"),
-                         json.dumps(latest_tweets, ensure_ascii=False),
+                         json.dumps(latest_tweets, ensure_ascii=False),g
                          json.dumps(latest_tweets, ensure_ascii=False)))
             cur.execute("update users set latest = %s", (new_latest,))
     conn.commit()

@@ -98,11 +98,19 @@ def get_latest_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list
 
 
 def update_tweets(username: str, add_list: list) -> Tuple[Response, list]:
-    latest_tweets = fetch_todays_tweets(username) + add_list[::-1]
+    before_tweets = fetch_todays_tweets(username)
+    if before_tweets is None:
+        latest_tweets = add_list[::-1]
+    else:
+        latest_tweets = before_tweets + add_list[::-1]
     new_latest = latest_tweets[-1]["id"]
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("update diary set tweets = %s", (json.dumps(latest_tweets, ensure_ascii=False),))
+            cur.execute("insert into diary (twitter_name, date, tweets) values (%s, %s, %s) "
+                        "on conflict (twitter_name, date) do update set tweets = %s",
+                        (username, datetime.today().strftime("%Y%m%d"),
+                         json.dumps(latest_tweets, ensure_ascii=False),
+                         json.dumps(latest_tweets, ensure_ascii=False)))
             cur.execute("update users set latest = %s", (new_latest,))
     conn.commit()
     return latest_tweets

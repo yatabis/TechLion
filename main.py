@@ -103,7 +103,7 @@ def update_tweets(username: str, add_list: list) -> Tuple[Response, list]:
         latest_tweets = add_list[::-1]
     else:
         latest_tweets = before_tweets + add_list[::-1]
-    new_latest = latest_tweets[-1]["id"]
+    new_latest = latest_tweets[-1]["id"] if latest_tweets != [] else fetch_latest(username)
     with open_pg() as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("insert into diary (twitter_name, date, tweets) values (%s, %s, %s) "

@@ -126,8 +126,7 @@ def hello():
 def get_twitter_today(username: str) -> HTTPResponse:
     token = fetch_token(username)
     if token is None:
-        status_code = 404
-        body = {"error": {"message": f"User '{username}' does not exist."}}
+        return HTTPResponse(status=302, headers={"Location": "/twitter/login"})
     else:
         oauth = OAuth1Session(CK, CS, token["twitter_access_token"], token["twitter_access_token_secret"])
         latest = fetch_latest(username)
@@ -136,8 +135,7 @@ def get_twitter_today(username: str) -> HTTPResponse:
         if status_code == 200:
             body = update_tweets(username, tweets)
         elif status_code == 401 and req.json()["errors"][0]["code"] == 89:
-            status_code = 404
-            body = {"error": {"message": f"User '{username}' does not exist."}}
+            return HTTPResponse(status=302, headers={"Location": "/twitter/login"})
         else:
             body = req.json()
     return HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False), headers={"Content-Type": "application/json"})

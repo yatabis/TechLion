@@ -122,7 +122,7 @@ def hello():
 
 
 @get("/twitter/today/<username>")
-@auth_basic(check)
+# @auth_basic(check)
 def get_twitter_today(username: str) -> HTTPResponse:
     token = fetch_token(username)
     if token is None:

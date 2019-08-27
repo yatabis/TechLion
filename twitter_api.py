@@ -91,6 +91,8 @@ def get_twitter_today(user_id: str) -> HTTPResponse:
 
 @get("/twitter/login")
 def twitter_login():
+    CALLBACK_URL = "http://0.0.0.0:5000/twitter/oauth-callback"
+    TOP_URL = "http://0.0.0.0:5000/dummy"
     callback_query = "?callback=" + request.params.get("callback", TOP_URL)
     oauth_session = OAuth1Session(client_key=CK, client_secret=CS, callback_uri=CALLBACK_URL + callback_query)
     oauth_session.fetch_request_token(REQUEST_TOKEN_EP)
@@ -109,4 +111,4 @@ def twitter_oauth_callback():
         return json_response(req.status_code, req.json())
     user = req.json()
     upsert_twitter_info(user["id"], user["screen_name"], token["oauth_token"], token["oauth_token_secret"])
-    return redirect(request.params.get("callback"))
+    return redirect(f"{request.params.get('callback')}?your_user_id={user['id']}")

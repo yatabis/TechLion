@@ -5,7 +5,10 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from typing import Optional
 
+from cryptograph import encrypt, decrypt
+
 DSN = os.environ.get("DATABASE_URL")
+PASSWORD = os.environ.get("PASSWORD")
 
 
 def open_pg():
@@ -28,7 +31,12 @@ def fetch_twitter_info(user_id: str) -> Optional[list]:
                         "where  user_id = %s",
                         (user_id,))
             twitter_info = cur.fetchone()
-    return dict(twitter_info) if twitter_info is not None else None
+    if twitter_info is None:
+        return None
+    twitter_info = dict(twitter_info)
+    twitter_info["twitter_access_token"] = decrypt(twitter_info["twitter_access_token"], PASSWORD)
+    twitter_info["twitter_access_token_secret"] = decrypt(twitter_info["twitter_access_token_secret"], PASSWORD)
+    return twitter_info
 
 
 def fetch_tweets(user_id: str, date: str = None) -> list:
@@ -82,6 +90,8 @@ def fetch_google_token(user_id: str):
 
 
 def upsert_twitter_info(user_id, user_name, access_token, access_secret):
+    access_token_aes = encrypt(access_token, PASSWORD)
+    access_secret_aes = encrypt(access_secret, PASSWORD)
     with open_pg() as conn:
         with open_cursor(conn) as cur:
             cur.execute("insert into users "
@@ -92,25 +102,5 @@ def upsert_twitter_info(user_id, user_name, access_token, access_secret):
                         "twitter_name = %s,"
                         "twitter_access_token = %s,"
                         "twitter_access_token_secret = %s",
-                        (user_id, user_id, user_name, access_token, access_secret,
-                         user_name, access_token, access_secret))
-
-
-def test():
-    gmail = "39yatabis.rim8820xxx@gmail.com"
-    with open_pg() as conn:
-        with open_cursor(conn) as cur:
-            cur.execute("insert into users (user_id, google_id) values (%s, %s)", (gmail, gmail))
-        conn.commit()
-
-
-if __name__ == '__main__':
-    # from pprint import pprint
-    # twitter = fetch_twitter_info("yatabis_tg")
-    # print(twitter)
-    # tw = fetch_tweets("yatabis_tg", "20190826")
-    # pprint(tw)
-    upsert_twitter_info(19276,
-                        "JehanneAI",
-                        "3119715565-OFY6fMMSsGv2iGPpRV07azTjDOxkHbyRJRO3ZgK",
-                        "AOxoVvCwKHnev3n67PbI7z2Qkk3c3aoVifgKIcSNAvX9Q")
+                        (user_id, user_id, user_name, access_token_aes, access_secret_aes,
+                         user_name, access_token_aes, access_secret_aes))

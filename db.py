@@ -3,7 +3,7 @@ import json
 import os
 import psycopg2
 from psycopg2.extras import DictCursor
-from typing import Optional
+from typing import Optional, Union
 
 from cryptograph import encrypt, decrypt
 
@@ -17,6 +17,34 @@ def open_pg():
 
 def open_cursor(conn):
     return conn.cursor(cursor_factory=DictCursor)
+
+
+def sign_up(google: str, twitter: str) -> Union[str, dict]:
+    user_id = google.split("@")[0]
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select user_id "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            if cur.fetchone() is not None:
+                return {"error": {"message": f"User {user_id} already exists."}}
+            cur.execute("insert into users "
+                        "(user_id, twitter_name, google_id) "
+                        "values (%s, %s, %s)",
+                        (user_id, twitter, google))
+    return user_id
+
+
+def fetch_user(user_id: str) -> Optional[dict]:
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select * "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            user = cur.fetchone()
+    return dict(user) if user is not None else None
 
 
 def fetch_twitter_info(user_id: str) -> Optional[list]:

@@ -22,7 +22,7 @@ def google_login():
     # REDIRECT_URI = "http://localhost:5000/google/oauth-callback"
     callback_query = "?callback=" + request.params.get("callback", TOP_URL)
     oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI + callback_query, scope=SCOPE)
-    authorization_url, state = oauth.authorization_url(AUTH_URI, access_type="offline", prompt="none")
+    authorization_url, state = oauth.authorization_url(AUTH_URI, access_type="offline", prompt="select_account")
     return redirect(authorization_url)
 
 

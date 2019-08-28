@@ -31,10 +31,14 @@ def google_oauth_callback():
     callback_query = "?callback=" + request.params.get("callback")
     oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI + callback_query)
     token = oauth.fetch_token(token_url=TOKEN_URI, authorization_response=request.url, client_secret=CLIENT_SECRET)
+    for k, v in token.items():
+        print(f"{k}: {v}")
     req = oauth.get(VERIFY_EP, headers={"Authorization": f"Bearer {token['access_token']}"})
     if req.status_code != 200:
         return json_response(req.status_code, req.json())
     user = req.json()
+    for k, v in user.items():
+        print(f"{k}: {v}")
     user_id = user["email"].split("@")[0]
     upsert_google_info(user_id, user["email"], token["access_token"], token["refresh_token"], token["expires_at"])
     return redirect(f"{request.params.get('callback')}?your_user_id={user_id}")

@@ -14,16 +14,16 @@ CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 
 @get("/google/login")
 def google_login():
+    # REDIRECT_URI = "http://localhost:5000/google/oauth-callback"
     callback_query = "?callback=" + request.params.get("callback", TOP_URL)
     oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI + callback_query, scope=SCOPE)
     authorization_url, state = oauth.authorization_url(AUTH_URI, access_type="offline", prompt="select_account")
-    print(state)
     return redirect(authorization_url)
 
 
 @get("/google/oauth-callback")
 def google_oauth_callback():
-    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI)
+    callback_query = "?callback=" + request.params.get("callback")
+    oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI + callback_query)
     token = oauth.fetch_token(token_url=TOKEN_URI, authorization_response=request.url, client_secret=CLIENT_SECRET)
     return dict(token)
-

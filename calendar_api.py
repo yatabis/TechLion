@@ -7,7 +7,7 @@ TOP_URL = "https://hacku-techlion.herokuapp.com/dummy"
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 SCOPE = ["https://www.googleapis.com/auth/calendar.readonly",
-         "https://www.googleapis.com/oauth2/v1/userinfo"]
+         "https://www.googleapis.com/auth/userinfo.profile"]
 
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")

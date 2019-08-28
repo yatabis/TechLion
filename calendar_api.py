@@ -31,7 +31,7 @@ def google_oauth_callback():
     callback_query = "?callback=" + request.params.get("callback")
     oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URI + callback_query)
     token = oauth.fetch_token(token_url=TOKEN_URI, authorization_response=request.url, client_secret=CLIENT_SECRET)
-    req = oauth.get(ep, headers={"Authorization": f"Bearer {token['access_token']}"})
+    req = oauth.get(VERIFY_EP, headers={"Authorization": f"Bearer {token['access_token']}"})
     if req.status_code != 200:
         return json_response(req.status_code, req.json())
     user = req.json()

@@ -89,7 +89,7 @@ def fetch_google_token(user_id: str):
     return dict(token) if token is not None else None
 
 
-def upsert_twitter_info(user_id, user_name, access_token, access_secret):
+def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_secret: str):
     access_token_aes = encrypt(access_token, PASSWORD)
     access_secret_aes = encrypt(access_secret, PASSWORD)
     with open_pg() as conn:
@@ -104,3 +104,11 @@ def upsert_twitter_info(user_id, user_name, access_token, access_secret):
                         "twitter_access_token_secret = %s",
                         (user_id, user_id, user_name, access_token_aes, access_secret_aes,
                          user_name, access_token_aes, access_secret_aes))
+
+
+def upsert_google_info(user_id: str, user_name: str, access_token: str, refresh_token: str, expires_at: str):
+    print(user_id)
+    print(user_name)
+    print(access_token)
+    print(refresh_token)
+    print(expires_at)

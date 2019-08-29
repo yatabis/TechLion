@@ -3,8 +3,9 @@ import json
 import os
 import psycopg2
 from psycopg2.extras import DictCursor
-from typing import Optional, Union
+from typing import Tuple, Optional, Union
 
+from http_elements import Error
 from cryptograph import encrypt, decrypt
 
 DSN = os.environ.get("DATABASE_URL")
@@ -19,7 +20,7 @@ def open_cursor(conn):
     return conn.cursor(cursor_factory=DictCursor)
 
 
-def sign_up(google: str, twitter: str) -> Union[str, dict]:
+def sign_up(user_name: str, google: str, twitter: str) -> Tuple[dict, Optional[Error]]:
     user_id = google.split("@")[0]
     with open_pg() as conn:
         with open_cursor(conn) as cur:
@@ -28,12 +29,19 @@ def sign_up(google: str, twitter: str) -> Union[str, dict]:
                         "where  user_id = %s",
                         (user_id,))
             if cur.fetchone() is not None:
-                return {"error": {"message": f"User {user_id} already exists."}}
+                return {}, Error(400, f"User {user_id} already exists.")
             cur.execute("insert into users "
-                        "(user_id, twitter_name, google_id) "
-                        "values (%s, %s, %s)",
-                        (user_id, twitter, google))
-    return user_id
+                        "(user_id, user_name, google_id, twitter_name) "
+                        "values (%s, %s, %s, %s)",
+                        (user_id, user_name, google, twitter))
+            cur.execute("select * "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            user = cur.fetchone()
+    if user is None:
+        return {}, Error(500, "User information could not be saved due to an unexpected error.")
+    return dict(user), None
 
 
 def fetch_user(user_id: str) -> Optional[dict]:
@@ -134,9 +142,45 @@ def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_
                          user_name, access_token_aes, access_secret_aes))
 
 
+def link_twitter_account(user_id: str,
+                         twitter_id: str,
+                         twitter_name: str,
+                         access_toke: str,
+                         access_secret: str) -> dict:
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select * "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            if cur.fetchone() is None:
+                return {"error": {}}
+            user = dict(cur.fetchone()[0])
+            if user.get("twitter_id") is not None and user.get("twitter_id") != twitter_id:
+                return {"error": {"message": "The logged-in Twitter account does not match the registered account."}}
+            cur.execute("update users set "
+                        "twitter_id = %s,"
+                        "twitter_name = %s,"
+                        "twitter_access_token = %s,"
+                        "twitter_access_token_secret = %s",
+                        (user_id, twitter_id, twitter_name,
+                         encrypt(access_toke, PASSWORD), encrypt(access_secret, PASSWORD)))
+    return user
+
+
 def upsert_google_info(user_id: str, user_name: str, access_token: str, refresh_token: str, expires_at: str):
     print(user_id)
     print(user_name)
     print(access_token)
     print(refresh_token)
     print(expires_at)
+
+
+if __name__ == '__main__':
+    from pprint import pprint
+    uid = "test_user_id"
+    tid = "test_twiiter_id"
+    tname = "test_twitter_name"
+    tat = "AT_XXXXXXXXXX"
+    tas = "AS_XXXXXXX"
+    pprint(link_twitter_account(uid, tid, tname, tat, tas))

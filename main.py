@@ -19,10 +19,10 @@ def hello():
 @route("/sign-up", method=["GET", "POST"])
 def post_sign_up() -> HTTPResponse:
     user, err = post_validation(request, "name", "google", "twitter")
-    if err is not None:
+    if err:
         return err.response
     user, err = sign_up(user.get("name"), user.get("google"), user.get("twitter"))
-    if err is not None:
+    if err:
         return err.response
     return json_response(200, user)
 

@@ -168,7 +168,7 @@ def link_twitter_account(user_id: str,
     return user
 
 
-def upsert_google_info(user_id: str, user_name: str, access_token: str, refresh_token: str, expires_at: str):
+def link_google_account(user_id: str, user_name: str, access_token: str, refresh_token: str, expires_at: str):
     print(user_id)
     print(user_name)
     print(access_token)

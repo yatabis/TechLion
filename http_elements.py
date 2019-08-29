@@ -21,7 +21,7 @@ def post_validation(req: BaseRequest, *args) -> Tuple[dict, Optional[Error]]:
     if req.method != "POST":
         return {}, Error(405, "GET method is not allowed.")
     if req.get_header("Content-Type") != "application/json":
-        return {}, Error(400, "HTTP request header `Content-Type` is invalid.")
+        return {}, Error(400, "HTTP request header `Content-Type` must be `application/json`.")
     if req.body.getvalue().decode() == "":
         return {}, Error(400, "Request body is empty.")
     for k in args:

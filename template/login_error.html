@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta http-equiv='X-UA-Compatible' content='ie=edge'>
+  <title>アカウント連携</title>
+  <link rel='stylesheet' href='https://unpkg.com/ress/dist/ress.min.css'>
+  <style>
+    p {
+      margin: 0.5rem;
+    }
+
+    .google-btn {
+      height: 3rem;
+      width: auto;
+      margin: 0.5rem;
+    }
+
+    .twitter-btn {
+      height: 2.5rem;
+      width: 12rem;
+      margin: 1.1rem;
+      background-color: #1da1f2;
+    }
+
+    .twitter-btn img {
+      float: left;
+      width: 2.5rem;
+      margin: 0;
+    }
+
+    a {
+      display: block;
+      line-height: 2.5rem;
+      height: auto;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+<h1>アカウント連携</h1>
+<p style="color: red">{{social}} ログインに失敗しました。</p>
+<p style="color: red">{{message}}</p>
+
+<a class="google-btn" href="">
+  <img class="google-btn" src="../static/img/btn_google_signin_dark_normal_web.png" alt="Googleログインボタン">
+</a>
+
+<div class="twitter-btn">
+  <img class="twitter-btn" src="../static/img/Twitter_Logo_WhiteOnBlue.svg" alt="Twitterログインボタン">
+  <a href="">Sign in with Twitter</a>
+</div>
+
+<br><p>みたいなページを作るといいと思います。</p>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import os
-from bottle import route, request, redirect, template
+from bottle import route, request, redirect, static_file, template
 from requests_oauthlib import OAuth2Session
 
 from http_elements import post_validation
@@ -52,5 +52,10 @@ def google_oauth_callback():
 @route("/google/error", method=["GET"])
 def login_error():
     params = request.params
-    message = f"{params.get('code')}: {params.get('message')}"
-    return template(social="Google", message=message)
+    message = f"{params.get('code', '')}: {params.get('message', '')}"
+    return template("template/login_error.html", social="Google", message=message)
+
+
+@route("/static/img/btn_google_signin_dark_normal_web.png", method=["GET"])
+def google_login_button():
+    return static_file("img/btn_google_signin_dark_normal_web.png", __file__.rsplit("/", 1)[0] + "/static")

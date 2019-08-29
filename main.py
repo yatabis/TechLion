@@ -45,5 +45,10 @@ def dummy():
     return template("dummy.html")
 
 
+@get("/ping")
+def ping():
+    return HTTPResponse()
+
+
 if __name__ == '__main__':
     run(host="0.0.0.0", port=os.environ.get("PORT", 5000))

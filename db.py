@@ -44,6 +44,33 @@ def sign_up(user_name: str, google: str, twitter: str) -> Tuple[dict, Optional[E
     return dict(user), None
 
 
+def link_google_account(google_id: str,
+                        access_token: str,
+                        refresh_token: str,
+                        expires_at: str) -> Tuple[dict, Optional[Error]]:
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select google_id "
+                        "from   users "
+                        "where  google_id = %s",
+                        (google_id,))
+            if cur.fetchone() is None:
+                return {}, Error(400, "The logged-in Google account does not match the registered account.")
+            cur.execute("update users set "
+                        "google_access_token = %s,"
+                        "google_refresh_token = %s,"
+                        "google_token_expires_at = %s",
+                        (access_token, refresh_token, expires_at))
+            cur.execute("select * "
+                        "from   users "
+                        "where  google_id = %s",
+                        (google_id,))
+            user = cur.fetchone()
+    if user is None:
+        return {}, Error(500, "User information could not be saved due to an unexpected error.")
+    return dict(user), None
+
+
 def fetch_user(user_id: str) -> Optional[dict]:
     with open_pg() as conn:
         with open_cursor(conn) as cur:
@@ -166,21 +193,3 @@ def link_twitter_account(user_id: str,
                         (user_id, twitter_id, twitter_name,
                          encrypt(access_toke, PASSWORD), encrypt(access_secret, PASSWORD)))
     return user
-
-
-def link_google_account(user_id: str, user_name: str, access_token: str, refresh_token: str, expires_at: str):
-    print(user_id)
-    print(user_name)
-    print(access_token)
-    print(refresh_token)
-    print(expires_at)
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-    uid = "test_user_id"
-    tid = "test_twiiter_id"
-    tname = "test_twitter_name"
-    tat = "AT_XXXXXXXXXX"
-    tas = "AS_XXXXXXX"
-    pprint(link_twitter_account(uid, tid, tname, tat, tas))

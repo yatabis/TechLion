@@ -37,9 +37,7 @@ def google_oauth_callback():
     if req.status_code != 200:
         return json_response(req.status_code, req.json())
     google = req.json()
-    google_id = google["email"].split("@")[0]
-    user, err = link_google_account(google_id,
-                                    google["email"],
+    user, err = link_google_account(google["email"],
                                     token["access_token"],
                                     token.get("refresh_token"),
                                     token["expires_at"])

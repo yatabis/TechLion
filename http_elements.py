@@ -8,6 +8,7 @@ JSON_HEADER = {"Content-Type": "application/json"}
 class Error:
     def __init__(self, code: int, message: str):
         self.code = code
+        self.message = message
         self.body = {"error": {
             "code": code,
             "message": message

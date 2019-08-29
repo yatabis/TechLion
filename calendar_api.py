@@ -13,8 +13,8 @@ SCOPE = ["https://www.googleapis.com/auth/calendar.readonly",
 VERIFY_EP = "https://www.googleapis.com/oauth2/v1/userinfo"
 
 REDIRECT_URL = os.environ.get("REDIRECT_URL")
-SUCESS_URL = os.environ.get("SUCCESS_URL")
-ERROR_URL = os.environ.get("ERROR_URL")
+SUCCESS_URL = os.environ.get("SUCCESS_URL")
+ERROR_URL = "https://hacku-techlion.herokuapp.com/google/error"
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 
@@ -41,11 +41,16 @@ def google_oauth_callback():
                                     token["access_token"],
                                     token.get("refresh_token"),
                                     token["expires_at"])
-    print(user)
-    print(err)
-    # return redirect(f"{request.params.get('callback')}?your_user_id={user_id}")
+    if err:
+        return redirect(f"{ERROR_URL}?code={err.code}&message={err.message}")
+    if user["twitter_id"] is None:
+        return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
+    else:
+        return redirect(SUCCESS_URL)
 
 
 @route("/google/error", method=["GET"])
 def login_error():
-    return template(social="Google", message="登録されているGmailアドレスと一致しませんでした。")
+    params = request.params
+    message = f"{params.get('code'): {params.get('message')}}"
+    return template(social="Google", message=message)

@@ -52,5 +52,5 @@ def google_oauth_callback():
 @route("/google/error", method=["GET"])
 def login_error():
     params = request.params
-    message = f"{params.get('code'): {params.get('message')}}"
+    message = f"{params.get('code')}: {params.get('message')}"
     return template(social="Google", message=message)

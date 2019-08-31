@@ -1,32 +1,29 @@
 from datetime import datetime
 import json
 import os
-from bottle import get, request, redirect
+from bottle import route, request, redirect, static_file
 from bottle import HTTPResponse
 from pytz import timezone
 from requests import Response
 from requests_oauthlib import OAuth1Session
 from typing import Tuple
 
-from db import fetch_twitter_info, update_tweets, upsert_twitter_info
+from http_elements import post_validation, json_response
+from db import fetch_twitter_info, update_tweets, link_twitter_account
 
-JSON_HEADER = {"Content-Type": "application/json"}
 DOMAIN_URL = "https://hacku-techlion.herokuapp.com"
 LOGIN_URL = DOMAIN_URL + "/twitter/login"
 TIMELINE_EP = "https://api.twitter.com/1.1/statuses/user_timeline.json"
-TOP_URL = "https://hacku-techlion.herokuapp.com/dummy"
-CALLBACK_URL = "https://hacku-techlion.herokuapp.com/twitter/oauth-callback"
 REQUEST_TOKEN_EP = "https://api.twitter.com/oauth/request_token"
 AUTHORIZE_EP = "https://api.twitter.com/oauth/authorize"
 ACCESS_TOKEN_EP = "https://api.twitter.com/oauth/access_token"
 VERIFY_EP = "https://api.twitter.com/1.1/account/verify_credentials.json"
 
+CALLBACK_URL = os.environ.get("TWITTER_CALLBACK_URL")
+SUCCESS_URL = os.environ.get("SUCCESS_URL")
+ERROR_URL = os.environ.get("TWITTER_ERROR_URL")
 CK = os.environ.get("CONSUMER_API_KEY")
 CS = os.environ.get("CONSUMER_API_SECRET_KEY")
-
-
-def json_response(status_code: int, body: dict) -> HTTPResponse:
-    return HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False), headers=JSON_HEADER)
 
 
 def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
@@ -60,7 +57,7 @@ def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
     return req, tweets
 
 
-@get("/twitter/today/<user_id>")
+@route("/twitter/today/<user_id>")
 def get_twitter_today(user_id: str) -> HTTPResponse:
     twitter = fetch_twitter_info(user_id)
     if twitter is None:
@@ -89,18 +86,18 @@ def get_twitter_today(user_id: str) -> HTTPResponse:
     return json_response(200, body)
 
 
-@get("/twitter/login")
+@route("/twitter/login", method=["GET", "POST"])
 def twitter_login():
-    # CALLBACK_URL = "http://0.0.0.0:5000/twitter/oauth-callback"
-    # TOP_URL = "http://0.0.0.0:5000/dummy"
-    callback_query = "?callback=" + request.params.get("callback", TOP_URL)
-    oauth_session = OAuth1Session(client_key=CK, client_secret=CS, callback_uri=CALLBACK_URL + callback_query)
+    user, err = post_validation(request, "user")
+    if err:
+        return err.response
+    oauth_session = OAuth1Session(client_key=CK, client_secret=CS, callback_uri=CALLBACK_URL)
     oauth_session.fetch_request_token(REQUEST_TOKEN_EP)
     authorization_url = oauth_session.authorization_url(AUTHORIZE_EP)
     return redirect(authorization_url)
 
 
-@get("/twitter/oauth-callback")
+@route("/twitter/oauth-callback")
 def twitter_oauth_callback():
     oauth_session = OAuth1Session(CK, CS)
     oauth_session.parse_authorization_response(request.url)
@@ -109,6 +106,25 @@ def twitter_oauth_callback():
     req = oauth.get(VERIFY_EP)
     if req.status_code != 200:
         return json_response(req.status_code, req.json())
-    user = req.json()
-    upsert_twitter_info(user["id"], user["screen_name"], token["oauth_token"], token["oauth_token_secret"])
-    return redirect(f"{request.params.get('callback')}?your_user_id={user['id']}")
+    twitter = req.json()
+    user, err = link_twitter_account(twitter["id_str"],
+                                     twitter["screen_name"],
+                                     token["oauth_token"],
+                                     token["oauth_token_secret"])
+    if err:
+        return redirect(f"{ERROR_URL}?code={err.code}&message={err.message}")
+    if user["google_id"] is None:
+        return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
+    return template(SUCCESS_URL)
+
+
+@route("/twitter/error", method=["GET"])
+def login_error():
+    params = request.params
+    message = f"{params.get('code', '')}: {params.get('message', '')}"
+    return template("template/login_error.html", social="Twitter", message=message)
+
+
+@route("/static/img/Twitter_Logo_WhiteOnBlue.svg", method=["GET"])
+def google_login_button():
+    return static_file("img/Twitter_Logo_WhiteOnBlue.svg", __file__.rsplit("/", 1)[0] + "/static")

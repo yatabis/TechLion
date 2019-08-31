@@ -26,10 +26,10 @@ def sign_up(user_name: str, google: str, twitter: str) -> Tuple[dict, Optional[E
         with open_cursor(conn) as cur:
             cur.execute("select user_id "
                         "from   users "
-                        "where  user_id = %s",
-                        (user_id,))
+                        "where  user_id = %s or twitter_name = %s",
+                        (user_id, twitter))
             if cur.fetchone() is not None:
-                return {}, Error(400, f"User {user_id} already exists.")
+                return {}, Error(400, f"User `{user_id}` (or `{twitter}`) already exists.")
             cur.execute("insert into users "
                         "(user_id, user_name, google_id, twitter_name) "
                         "values (%s, %s, %s, %s)",
@@ -55,12 +55,13 @@ def link_google_account(google_id: str,
                         "where  google_id = %s",
                         (google_id,))
             if cur.fetchone() is None:
-                return {}, Error(400, "The logged-in Google account does not match the registered account.")
+                return {}, Error(400, f"Google account `{google_id}` does not match the registered account.")
             cur.execute("update users set "
                         "google_access_token = %s,"
                         "google_refresh_token = %s,"
-                        "google_token_expires_at = %s",
-                        (access_token, refresh_token, expires_at))
+                        "google_token_expires_at = %s "
+                        "where google_id = %s",
+                        (access_token, refresh_token, expires_at, google_id))
             cur.execute("select * "
                         "from   users "
                         "where  google_id = %s",
@@ -68,6 +69,36 @@ def link_google_account(google_id: str,
             user = cur.fetchone()
     if user is None:
         return {}, Error(500, "User information could not be saved due to an unexpected error.")
+    return dict(user), None
+
+
+def link_twitter_account(twitter_id: str,
+                         twitter_name: str,
+                         access_toke: str,
+                         access_secret: str) -> Tuple[dict, Optional[Error]]:
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select twitter_name "
+                        "from   users "
+                        "where  twitter_name = %s",
+                        (twitter_name,))
+            if cur.fetchone() is None:
+                return {}, Error(400, f"Twitter account `{twitter_name}` does not match the registered account.")
+            cur.execute("update users set "
+                        "twitter_id = %s,"
+                        "twitter_name = %s,"
+                        "twitter_access_token = %s,"
+                        "twitter_access_token_secret = %s "
+                        "where twitter_name = %s",
+                        (twitter_id, twitter_name, encrypt(access_toke, PASSWORD), encrypt(access_secret, PASSWORD),
+                         twitter_name))
+            cur.execute("select * "
+                        "from   users "
+                        "where  twitter_id = %s",
+                        (twitter_id,))
+            user = cur.fetchone()
+        if user is None:
+            return {}, Error(500, "User information could not be saved due to an unexpected error.")
     return dict(user), None
 
 
@@ -167,29 +198,3 @@ def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_
                         "twitter_access_token_secret = %s",
                         (user_id, user_id, user_name, access_token_aes, access_secret_aes,
                          user_name, access_token_aes, access_secret_aes))
-
-
-def link_twitter_account(user_id: str,
-                         twitter_id: str,
-                         twitter_name: str,
-                         access_toke: str,
-                         access_secret: str) -> dict:
-    with open_pg() as conn:
-        with open_cursor(conn) as cur:
-            cur.execute("select * "
-                        "from   users "
-                        "where  user_id = %s",
-                        (user_id,))
-            if cur.fetchone() is None:
-                return {"error": {}}
-            user = dict(cur.fetchone()[0])
-            if user.get("twitter_id") is not None and user.get("twitter_id") != twitter_id:
-                return {"error": {"message": "The logged-in Twitter account does not match the registered account."}}
-            cur.execute("update users set "
-                        "twitter_id = %s,"
-                        "twitter_name = %s,"
-                        "twitter_access_token = %s,"
-                        "twitter_access_token_secret = %s",
-                        (user_id, twitter_id, twitter_name,
-                         encrypt(access_toke, PASSWORD), encrypt(access_secret, PASSWORD)))
-    return user

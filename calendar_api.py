@@ -12,7 +12,7 @@ SCOPE = ["https://www.googleapis.com/auth/calendar.readonly",
          "https://www.googleapis.com/auth/userinfo.email"]
 VERIFY_EP = "https://www.googleapis.com/oauth2/v1/userinfo"
 
-REDIRECT_URL = os.environ.get("REDIRECT_URL")
+REDIRECT_URL = os.environ.get("GOOGLE_REDIRECT_URL")
 SUCCESS_URL = os.environ.get("SUCCESS_URL")
 ERROR_URL = "https://hacku-techlion.herokuapp.com/google/error"
 CLIENT_ID = os.environ.get("CLIENT_ID")
@@ -45,8 +45,7 @@ def google_oauth_callback():
         return redirect(f"{ERROR_URL}?code={err.code}&message={err.message}")
     if user["twitter_id"] is None:
         return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
-    else:
-        return redirect(SUCCESS_URL)
+    return template(SUCCESS_URL)
 
 
 @route("/google/error", method=["GET"])

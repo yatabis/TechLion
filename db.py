@@ -61,7 +61,7 @@ def link_google_account(google_id: str,
                         "google_refresh_token = %s,"
                         "google_token_expires_at = %s "
                         "where google_id = %s",
-                        (access_token, refresh_token, expires_at, google_id))
+                        (encrypt(access_token), encrypt(refresh_token), expires_at, google_id))
             cur.execute("select * "
                         "from   users "
                         "where  google_id = %s",

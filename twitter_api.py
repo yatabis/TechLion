@@ -25,6 +25,12 @@ ERROR_URL = os.environ.get("TWITTER_ERROR_URL")
 CK = os.environ.get("CONSUMER_API_KEY")
 CS = os.environ.get("CONSUMER_API_SECRET_KEY")
 
+MORNING = ["おは", "お早う", "おはやう", "おきた", "起きた"]
+NIGHT = ["おやすみ", "お休み", "ねる", "寝る", "ねます", "寝ます"]
+BREAKFAST = ["あさごはん", "朝ごはん", "あさご飯", "朝ご飯", "朝飯", "朝食", "朝メシ"]
+LUNCH = ["ひるごはん", "昼ごはん", "ひるご飯", "昼ご飯", "昼飯", "昼メシ", "昼食"]
+DINNER = ["ばんごはん", "晩ごはん", "晩ご飯", "晩御飯", "夕ご飯", "夜ご飯", "晩飯", "夕食", "夕飯"]
+
 
 def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[requests.Response, list]:
     q = {"since_id": latest} if latest is not None else {"count": 200}
@@ -104,19 +110,19 @@ def get_twitter_today_detail() -> HTTPResponse:
     }
     used = set()
     for idx, tw in enumerate(body):
-        if "おはよう" in tw["text"]:
+        if sum([t in tw["text"] for t in MORNING]) > 0:
             detail["morning"].append(tw)
             used.add(idx)
-        if "おやすみ" in tw["text"]:
+        if sum([t in tw["text"] for t in NIGHT]) > 0:
             detail["nignt"].append(tw)
             used.add(idx)
-        if "朝ごはん" in tw["text"]:
+        if sum([t in tw["text"] for t in BREAKFAST]) > 0:
             detail["breakfast"].append(tw)
             used.add(idx)
-        if "昼ごはん" in tw["text"]:
+        if sum([t in tw["text"] for t in LUNCH]) > 0:
             detail["lunch"].append(tw)
             used.add(idx)
-        if "晩ごはん" in tw["text"]:
+        if sum([t in tw["text"] for t in DINNER]) > 0:
             detail["dinner"].append(tw)
             used.add(idx)
         if idx not in used:

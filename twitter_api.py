@@ -59,6 +59,7 @@ def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[requests.Response
 
 @route("/twitter/today", method=["GET", "POST"])
 def get_twitter_today() -> HTTPResponse:
+    q = request.params.q
     user, err = get_validation(request, "user")
     if err:
         return err.response
@@ -72,6 +73,8 @@ def get_twitter_today() -> HTTPResponse:
     elif res.status_code != 200:
         return json_response(res.status_code, res.json())
     body = update_tweets(user["user"], new_tweets)
+    if q is not None:
+        body = [b for b in body if q in b["text"]]
     return json_response(200, body)
 
 

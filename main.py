@@ -6,7 +6,7 @@ from bottle import HTTPResponse, template
 from typing import Dict, Union
 
 from http_elements import post_validation, json_response
-from db import sign_up, fetch_user
+from db import sign_up
 import twitter_api
 import calendar_api
 
@@ -25,14 +25,6 @@ def post_sign_up() -> HTTPResponse:
     if err:
         return err.response
     return json_response(200, user)
-
-
-@route("/users/<user_id>")
-def get_user(user_id: str) -> HTTPResponse:
-    user = fetch_user(user_id)
-    if user is None:
-        return json_response(404, body={"error": f"User {user_id} does not exist."})
-    return json_response(200, body=user)
 
 
 @route("/dummy")

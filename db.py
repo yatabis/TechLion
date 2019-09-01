@@ -104,18 +104,7 @@ def link_twitter_account(twitter_id: str,
     return dict(user), None
 
 
-def fetch_user(user_id: str) -> Optional[dict]:
-    with open_pg() as conn:
-        with open_cursor(conn) as cur:
-            cur.execute("select * "
-                        "from   users "
-                        "where  user_id = %s",
-                        (user_id,))
-            user = cur.fetchone()
-    return dict(user) if user is not None else None
-
-
-def fetch_twitter_info(user_id: str) -> Optional[list]:
+def fetch_twitter_info(user_id: str) -> Tuple[dict, Optional[Error]]:
     with open_pg() as conn:
         with open_cursor(conn) as cur:
             cur.execute("select twitter_id,"
@@ -126,32 +115,19 @@ def fetch_twitter_info(user_id: str) -> Optional[list]:
                         "from   users "
                         "where  user_id = %s",
                         (user_id,))
-            twitter_info = cur.fetchone()
-    if twitter_info is None:
-        return None
-    twitter_info = dict(twitter_info)
-    twitter_info["twitter_access_token"] = decrypt(twitter_info["twitter_access_token"], PASSWORD)
-    twitter_info["twitter_access_token_secret"] = decrypt(twitter_info["twitter_access_token_secret"], PASSWORD)
-    return twitter_info
-
-
-def fetch_tweets(user_id: str, date: str = None) -> list:
-    if date is None:
-        date = datetime.today().strftime("%Y%m%d")
-    with open_pg() as conn:
-        with open_cursor(conn) as cur:
-            cur.execute("select tweets "
-                        "from   diary "
-                        "where  user_id = %s"
-                        "   and date = %s",
-                        (user_id, date))
-            tweets = cur.fetchone()
-            if tweets is None:
-                cur.execute("insert into diary "
-                            "(user_id, date) "
-                            "values (%s, %s)",
-                            (user_id, date))
-    return json.loads(tweets[0]) if tweets is not None else []
+            twitter = cur.fetchone()
+            if twitter is None:
+                return {}, Error(404, f"User {user_id} does not exist.")
+            if twitter["twitter_id"] is None:
+                return {}, Error(403, f"User {user_id} is not linked to Twitter account.")
+    twitter_info = {
+        "id": twitter["twitter_id"],
+        "name": twitter["twitter_name"],
+        "access_token": decrypt(twitter["twitter_access_token"], PASSWORD),
+        "access_secret": decrypt(twitter["twitter_access_token_secret"], PASSWORD),
+        "latest_id": twitter["twitter_latest_id"],
+    }
+    return dict(twitter_info), None
 
 
 def update_tweets(user_id: str, new_tweets: list, date: str = None) -> list:
@@ -172,6 +148,25 @@ def update_tweets(user_id: str, new_tweets: list, date: str = None) -> list:
                             "where  user_id = %s",
                             (latest, user_id))
     return now_tweets
+
+
+def fetch_tweets(user_id: str, date: str = None) -> list:
+    if date is None:
+        date = datetime.today().strftime("%Y%m%d")
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select tweets "
+                        "from   diary "
+                        "where  user_id = %s"
+                        "   and date = %s",
+                        (user_id, date))
+            tweets = cur.fetchone()
+            if tweets is None:
+                cur.execute("insert into diary "
+                            "(user_id, date) "
+                            "values (%s, %s)",
+                            (user_id, date))
+    return json.loads(tweets[0]) if tweets is not None else []
 
 
 def fetch_google_token(user_id: str):

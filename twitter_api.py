@@ -8,7 +8,7 @@ from requests import Response
 from requests_oauthlib import OAuth1Session
 from typing import Tuple
 
-from http_elements import post_validation, json_response
+from http_elements import get_validation, post_validation, json_response, Error
 from db import fetch_twitter_info, update_tweets, link_twitter_account
 
 DOMAIN_URL = "https://hacku-techlion.herokuapp.com"
@@ -57,32 +57,21 @@ def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
     return req, tweets
 
 
-@route("/twitter/today/<user_id>")
-def get_twitter_today(user_id: str) -> HTTPResponse:
-    twitter = fetch_twitter_info(user_id)
-    if twitter is None:
-        body = {"error": {
-            "message": f"User {user_id} does not exist.",
-            "callback_url": LOGIN_URL
-        }}
-        return json_response(404, body)
-    if twitter["twitter_id"] is None:
-        body = {"error": {
-            "message": f"User {user_id} is not linked to Twitter account.",
-            "callback_url": LOGIN_URL
-        }}
-        return json_response(403, body)
-    oauth = OAuth1Session(CK, CS, twitter["twitter_access_token"], twitter["twitter_access_token_secret"])
-    res, new_tweets = get_new_tweets(oauth, twitter["twitter_latest_id"])
+@route("/twitter/today", method=["GET", "POST"])
+def get_twitter_today() -> HTTPResponse:
+    user, err = get_validation(request, "user")
+    if err:
+        return err.response
+    twitter, err = fetch_twitter_info(user["user"])
+    if err:
+        return err.response
+    oauth = OAuth1Session(CK, CS, twitter["access_token"], twitter["access_secret"])
+    res, new_tweets = get_new_tweets(oauth, twitter["latest_id"])
     if res.status_code == 401 and res.json()["errors"][0]["code"] == 89:
-        body = {"error": {
-            "message": "The registered token is invalid. It may have expired.",
-            "callback_url": LOGIN_URL
-        }}
-        return json_response(401, body)
+        return Error(401, "The registered token is invalid. It may have expired. Please re-login.").response
     elif res.status_code != 200:
         return json_response(res.status_code, res.json())
-    body = update_tweets(user_id, new_tweets)
+    body = update_tweets(user["user"], new_tweets)
     return json_response(200, body)
 
 

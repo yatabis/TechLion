@@ -113,8 +113,8 @@ def twitter_oauth_callback():
                                      token["oauth_token_secret"])
     if err:
         return redirect(f"{ERROR_URL}?code={err.code}&message={err.message}")
-    if user["google_id"] is None:
-        return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
+    # if user["google_id"] is None:
+    #     return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
     return template(SUCCESS_URL)
 
 

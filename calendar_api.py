@@ -43,8 +43,8 @@ def google_oauth_callback():
                                     token["expires_at"])
     if err:
         return redirect(f"{ERROR_URL}?code={err.code}&message={err.message}")
-    if user["twitter_id"] is None:
-        return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
+    # if user["twitter_id"] is None:
+    #     return redirect("https://hacku-techlion.herokuapp.com/twitter/login")
     return template(SUCCESS_URL)
 
 

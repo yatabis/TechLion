@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import os
-from bottle import route, request, redirect, static_file
+from bottle import route, request, redirect, static_file, template
 from bottle import HTTPResponse
 from pytz import timezone
 from requests import Response

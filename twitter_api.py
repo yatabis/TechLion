@@ -4,7 +4,7 @@ import os
 from bottle import route, request, redirect, static_file, template
 from bottle import HTTPResponse
 from pytz import timezone
-from requests import Response
+import requests
 from requests_oauthlib import OAuth1Session
 from typing import Tuple
 
@@ -26,7 +26,7 @@ CK = os.environ.get("CONSUMER_API_KEY")
 CS = os.environ.get("CONSUMER_API_SECRET_KEY")
 
 
-def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[Response, list]:
+def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[requests.Response, list]:
     q = {"since_id": latest} if latest is not None else {"count": 200}
     req = oauth.get(TIMELINE_EP, params=q)
     if req.status_code != 200:
@@ -73,6 +73,52 @@ def get_twitter_today() -> HTTPResponse:
         return json_response(res.status_code, res.json())
     body = update_tweets(user["user"], new_tweets)
     return json_response(200, body)
+
+
+@route("/twitter/today/detail", method=["GET", "POST"])
+def get_twitter_today_detail() -> HTTPResponse:
+    user, err = get_validation(request, "user")
+    if err:
+        return err.response
+    twitter, err = fetch_twitter_info(user["user"])
+    if err:
+        return err.response
+    oauth = OAuth1Session(CK, CS, twitter["access_token"], twitter["access_secret"])
+    res, new_tweets = get_new_tweets(oauth, twitter["latest_id"])
+    if res.status_code == 401 and res.json()["errors"][0]["code"] == 89:
+        return Error(401, "The registered token is invalid. It may have expired. Please re-login.").response
+    elif res.status_code != 200:
+        return json_response(res.status_code, res.json())
+    body = update_tweets(user["user"], new_tweets)
+    detail = {
+        "event": [],
+        "morning": [],
+        "breakfast": [],
+        "lunch": [],
+        "dinner": [],
+        "night": [],
+        "other": []
+    }
+    used = set()
+    for idx, tw in enumerate(body):
+        if "おはよう" in tw["text"]:
+            detail["morning"].append(tw)
+            used.add(idx)
+        if "おやすみ" in tw["text"]:
+            detail["nignt"].append(tw)
+            used.add(idx)
+        if "朝ごはん" in tw["text"]:
+            detail["breakfast"].append(tw)
+            used.add(idx)
+        if "昼ごはん" in tw["text"]:
+            detail["lunch"].append(tw)
+            used.add(idx)
+        if "晩ごはん" in tw["text"]:
+            detail["dinner"].append(tw)
+            used.add(idx)
+        if idx not in used:
+            detail["other"].append(tw)
+    return json_response(200, detail)
 
 
 @route("/twitter/login", method=["GET", "POST"])

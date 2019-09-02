@@ -25,7 +25,8 @@ def google_login():
     if err:
         return err.response
     oauth = OAuth2Session(client_id=CLIENT_ID, redirect_uri=REDIRECT_URL, scope=SCOPE)
-    authorization_url, state = oauth.authorization_url(AUTH_URI, access_type="offline", prompt="select_account")
+    authorization_url, state = oauth.authorization_url(AUTH_URI,
+                                                       access_type="offline", approval_prompt="force")
     return redirect(authorization_url)
 
 

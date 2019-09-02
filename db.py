@@ -207,9 +207,32 @@ def fetch_google_token(user_id: str) -> Tuple[dict, Optional[Error]]:
     return google_token, None
 
 
-if __name__ == '__main__':
-    from pprint import pprint
-    resp, err = fetch_google_token("39yatabis.tg")
-    if err:
-        print(err.message)
-    pprint(resp)
+def refresh_token(user_id: str, token: str, expires: int) -> Tuple[dict, Optional[Error]]:
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select google_id "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            if cur.fetchone() is None:
+                return {}, Error(404, f"User {user_id} does not exist.")
+            cur.execute("update users set "
+                        "google_access_token = %s,"
+                        "google_token_expires_at = %s "
+                        "where user_id = %s",
+                        (encrypt(token, PASSWORD), datetime.now().timestamp() + expires, user_id))
+            cur.execute("select google_id, google_access_token, google_refresh_token, google_token_expires_at "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            user = cur.fetchone()
+            if user is None:
+                return {}, Error(500, "User information could not be saved due to an unexpected error.")
+            token = {
+                "id": user["google_id"],
+                "access_token": decrypt(user.get("google_access_token"), PASSWORD),
+                "refresh_token": decrypt(user.get("google_refresh_token"), PASSWORD),
+                "expires_at": user.get("google_token_expires_at")
+            }
+            return token, None
+

@@ -46,14 +46,27 @@ def get_map() -> HTTPResponse:
     return json_response(200, body)
 
 
+def float_check(t: str, v: int) -> bool:
+    try:
+        f = float(t)
+    except ValueError:
+        return False
+    return -v <= f <= v
+
+
 @route("/weather", method=["GET", "POST"])
 def get_weather(lat: int = None, lng: int = None) -> HTTPResponse:
-    if lat is None or lgn is None:
+    if lat is None or lng is None:
         lat, lng, err = get_validation(request, "lat", "lng")
         if err:
             return err.response
-    weather_get_url = f"http://api.openweathermap.org/data/2.5/weather?APPID={WEATHER_API_KEY}&lat={float(lat)}&lon={float(lng)}"
+    if not float_check(lat, 90):
+        return Error(400, "lat must be a real number between -90 and 90").response
+    if not float_check(lng, 180):
+        return Error(400, "lng must be a real number between -180 and 180").response
+    weather_get_url = f"http://api.openweathermap.org/data/2.5/weather?APPID={WEATHER_API_KEY}&lat={lat}&lon={lng}"
     req = requests.get(weather_get_url)
+    print(req.json())
     if req.status_code != 200:
         return Error(req.status_code, req.json()).response
     body = req.json()
@@ -66,3 +79,7 @@ def get_weather(lat: int = None, lng: int = None) -> HTTPResponse:
         "temp": int(body["main"]["temp"] - 273.15),
         "humid": body["main"]["humidity"]
     })
+
+
+if __name__ == '__main__':
+    print(float_check("72", 90))

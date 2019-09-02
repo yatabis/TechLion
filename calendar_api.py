@@ -3,6 +3,7 @@ import json
 import os
 from bottle import route, request, redirect, static_file, template
 from bottle import HTTPResponse
+import googlemaps
 from pytz import timezone
 import requests
 from requests_oauthlib import OAuth2Session
@@ -25,7 +26,9 @@ SUCCESS_URL = os.environ.get("SUCCESS_URL")
 ERROR_URL = "https://hacku-techlion.herokuapp.com/google/error"
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+MAP_API_KEY = os.environ.get("MAP_API_KEY")
 PASSWORD = os.environ.get("PASSWORD")
+PHOTO_WIDTH = 800
 
 
 def datetime_object(dt: str) -> dict:
@@ -80,14 +83,45 @@ def get_events_today() -> HTTPResponse:
     result = req.json().get("items")
     body = []
     for item in result:
+        location = item.get("location")
         body.append({
             "title": item.get("summary"),
-            "location": item.get("location"),
             "start": datetime_object(item.get("start", {}).get("dateTime")),
             "end": datetime_object(item.get("end", {}).get("dateTime")),
+            "location": {
+                "name": location
+            },
             "link": item.get("htmlLink"),
         })
+        if location is not None:
+            map_info, err = get_map(location)
+            if err is None:
+                body[-1]["location"]["photo"] = map_info["photo_url"]
+                body[-1]["location"]["latitude"] = map_info["latitude"]
+                body[-1]["location"]["longitude"] = map_info["longitude"]
     return json_response(200, body)
+
+
+def get_map(q: str) -> Tuple[dict, Optional[Error]]:
+    if q == "":
+        return {}, Error(400, "parameter `q` is required.")
+    client = googlemaps.Client(key=MAP_API_KEY)
+    req = client.places(q)
+    if req['status'] != 'OK':
+        return {}, Error(400, f"Google Maps API returns `{req['status']}`")
+    if len(req["results"]) != 1:
+        return {}, Error(500, f"Invalid number of result ({len(req['results'])}) are returned.")
+    result = req["results"][0]
+    body = {}
+    photos = result.get("photos")
+    if photos:
+        body["photo_url"] = (f"https://maps.googleapis.com/maps/api/place/photo"
+                             f"?maxwidth={PHOTO_WIDTH}"
+                             f"&photoreference={photos[0]['photo_reference']}"
+                             f"&key={MAP_API_KEY}")
+    body["latitude"] = result["geometry"]["location"]["lat"]
+    body["longitude"] = result["geometry"]["location"]["lng"]
+    return body, None
 
 
 @route("/google/login", method=["GET", "POST"])

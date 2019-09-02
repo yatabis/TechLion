@@ -21,11 +21,12 @@ with open("weather_table.csv") as c:
 
 
 @route("/map", method=["GET", "POST"])
-def get_map() -> HTTPResponse:
+def get_map(q: str = None) -> HTTPResponse:
     *_, err = get_validation(request)
     if err:
         return err.response
-    q = request.params.q
+    if q is None:
+        q = request.params.q
     if q == "":
         return Error(400, "parameter `q` is required.").response
     client = googlemaps.Client(key=MAP_API_KEY)
@@ -40,7 +41,8 @@ def get_map() -> HTTPResponse:
     if photos:
         body["photo_url"] = (f"https://maps.googleapis.com/maps/api/place/photo"
                              f"?maxwidth={PHOTO_WIDTH}"
-                             f"&photoreference={photos[0]['photo_reference']}")
+                             f"&photoreference={photos[0]['photo_reference']}"
+                             f"&key={MAP_API_KEY}")
     body["latitude"] = result["geometry"]["location"]["lat"]
     body["longitude"] = result["geometry"]["location"]["lng"]
     return json_response(200, body)

@@ -1,8 +1,10 @@
 import json
+import os
 from bottle import HTTPResponse, BaseRequest
 from typing import Dict, List, Tuple, Optional
 
 JSON_HEADER = {"Content-Type": "application/json"}
+PASSWORD = os.environ.get("PASSWORD")
 
 
 class Error:
@@ -37,5 +39,10 @@ def post_validation(req: BaseRequest, *args) -> Tuple[dict, Optional[Error]]:
     return req.json, None
 
 
-def json_response(status_code: int, body: dict) -> HTTPResponse:
-    return HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False), headers=JSON_HEADER)
+def json_response(status_code: int, body: dict, cookie: str = None) -> HTTPResponse:
+    response = HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False))
+    response.set_header("Content-Type", "application/json")
+    print(cookie)
+    if cookie is not None:
+        response.set_cookie("user_id", cookie, secret=PASSWORD, max_age=60*60*24*7)
+    return response

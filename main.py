@@ -27,8 +27,7 @@ def post_sign_up() -> HTTPResponse:
     user, err = sign_up(user.get("name"), user.get("google"), user.get("twitter"))
     if err:
         return err.response
-    response.set_cookie("user_id", user["user_id"], secret=PASSWORD, max_age=3600 * 24 * 7)
-    return json_response(200, user)
+    return json_response(200, user, user["user_id"])
 
 
 @route("/dummy")
@@ -43,3 +42,4 @@ def ping():
 
 if __name__ == '__main__':
     run(host="0.0.0.0", port=os.environ.get("PORT", 5000))
+    # pass

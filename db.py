@@ -127,7 +127,7 @@ def fetch_twitter_info(user_id: str) -> Tuple[dict, Optional[Error]]:
         "access_secret": decrypt(twitter["twitter_access_token_secret"], PASSWORD),
         "latest_id": twitter["twitter_latest_id"],
     }
-    return dict(twitter_info), None
+    return twitter_info, None
 
 
 def update_tweets(user_id: str, new_tweets: list, date: str = None) -> list:
@@ -186,12 +186,28 @@ def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_
                          user_name, access_token_aes, access_secret_aes))
 
 
-def fetch_google_token(user_id: str):
+def fetch_google_token(user_id: str) -> Tuple[dict, Optional[Error]]:
     with open_pg() as conn:
         with open_cursor(conn) as cur:
-            cur.execute("select google_access_toke, google_refresh_token, google_token_expires_at "
+            cur.execute("select google_id, google_access_token, google_refresh_token, google_token_expires_at "
                         "from   users "
                         "where  user_id = %s",
                         (user_id,))
             token = cur.fetchone()
-    return dict(token) if token is not None else None
+            if token is None:
+                return {}, Error(404, f"User {user_id} does not exist.")
+    google_token = {
+        "id": token["google_id"],
+        "access_token": decrypt(token.get("google_access_token"), PASSWORD),
+        "refresh_token": decrypt(token.get("google_refresh_token"), PASSWORD),
+        "expires_at": token.get("google_token_expires_at")
+    }
+    return google_token, None
+
+
+if __name__ == '__main__':
+    from pprint import pprint
+    resp, err = fetch_google_token("39yatabis.tg")
+    if err:
+        print(err.message)
+    pprint(resp)

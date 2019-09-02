@@ -33,6 +33,8 @@ def post_validation(req: BaseRequest, *args) -> Tuple[dict, Optional[Error]]:
         return {}, Error(400, "HTTP request header `Content-Type` must be `application/json`.")
     if req.body.getvalue().decode() == "":
         return {}, Error(400, "Request body is empty.")
+    if not isinstance(req.json, dict):
+        return {}, Error(400, "Request body is not JSON string.")
     for k in args:
         if not req.json.get(k):
             return {}, Error(400, f"The field {k} does not exist in the request body.")

@@ -9,6 +9,7 @@ from http_elements import post_validation, json_response
 from db import sign_up
 import twitter_api
 import calendar_api
+import map_api
 
 
 @route("/")

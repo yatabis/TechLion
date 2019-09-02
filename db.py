@@ -169,17 +169,6 @@ def fetch_tweets(user_id: str, date: str = None) -> list:
     return json.loads(tweets[0]) if tweets is not None else []
 
 
-def fetch_google_token(user_id: str):
-    with open_pg() as conn:
-        with open_cursor(conn) as cur:
-            cur.execute("select google_access_toke, google_refresh_token, google_token_expires_at "
-                        "from   users "
-                        "where  user_id = %s",
-                        (user_id,))
-            token = cur.fetchone()
-    return dict(token) if token is not None else None
-
-
 def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_secret: str):
     access_token_aes = encrypt(access_token, PASSWORD)
     access_secret_aes = encrypt(access_secret, PASSWORD)
@@ -195,3 +184,14 @@ def upsert_twitter_info(user_id: str, user_name: str, access_token: str, access_
                         "twitter_access_token_secret = %s",
                         (user_id, user_id, user_name, access_token_aes, access_secret_aes,
                          user_name, access_token_aes, access_secret_aes))
+
+
+def fetch_google_token(user_id: str):
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute("select google_access_toke, google_refresh_token, google_token_expires_at "
+                        "from   users "
+                        "where  user_id = %s",
+                        (user_id,))
+            token = cur.fetchone()
+    return dict(token) if token is not None else None

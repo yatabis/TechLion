@@ -106,15 +106,18 @@ def get_twitter_today_detail() -> HTTPResponse:
     elif res.status_code != 200:
         return json_response(res.status_code, res.json())
     body = update_tweets(user, new_tweets)
+    hashtags = list(set(hstg for tw in body for hstg in tw["hashtags"]))
     detail = {
         "event": [],
         "morning": [],
         "breakfast": [],
         "lunch": [],
         "dinner": [],
-        "night": [],
-        "other": []
+        "night": []
     }
+    for h in sorted(hashtags):
+        detail[h] = []
+    detail["other"] = []
     used = set()
     for idx, tw in enumerate(body):
         if sum([t in tw["text"] for t in MORNING]) > 0:
@@ -132,6 +135,10 @@ def get_twitter_today_detail() -> HTTPResponse:
         if sum([t in tw["text"] for t in DINNER]) > 0:
             detail["dinner"].append(tw)
             used.add(idx)
+        if len(tw["hashtags"]) > 0:
+            for hs in tw["hashtags"]:
+                detail[hs].append(tw)
+                used.add(idx)
         if idx not in used:
             detail["other"].append(tw)
     return json_response(200, detail)

@@ -69,7 +69,9 @@ def get_twitter_today() -> HTTPResponse:
     user, err = get_validation(request, "user")
     if err:
         return err.response
-    twitter, err = fetch_twitter_info(user["user"])
+    if user is None:
+        return Error(400, "parameter `user` is required").response
+    twitter, err = fetch_twitter_info(user)
     if err:
         return err.response
     oauth = OAuth1Session(CK, CS, twitter["access_token"], twitter["access_secret"])
@@ -78,7 +80,7 @@ def get_twitter_today() -> HTTPResponse:
         return Error(401, "The registered token is invalid. It may have expired. Please re-login.").response
     elif res.status_code != 200:
         return json_response(res.status_code, res.json())
-    body = update_tweets(user["user"], new_tweets)
+    body = update_tweets(user, new_tweets)
     if q is not None:
         body = [b for b in body if q in b["text"]]
     return json_response(200, body)
@@ -89,7 +91,9 @@ def get_twitter_today_detail() -> HTTPResponse:
     user, err = get_validation(request, "user")
     if err:
         return err.response
-    twitter, err = fetch_twitter_info(user["user"])
+    if user is None:
+        return Error(400, "parameter `user` is required").response()
+    twitter, err = fetch_twitter_info(user)
     if err:
         return err.response
     oauth = OAuth1Session(CK, CS, twitter["access_token"], twitter["access_secret"])
@@ -98,7 +102,7 @@ def get_twitter_today_detail() -> HTTPResponse:
         return Error(401, "The registered token is invalid. It may have expired. Please re-login.").response
     elif res.status_code != 200:
         return json_response(res.status_code, res.json())
-    body = update_tweets(user["user"], new_tweets)
+    body = update_tweets(user, new_tweets)
     detail = {
         "event": [],
         "morning": [],

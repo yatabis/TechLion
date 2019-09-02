@@ -104,6 +104,24 @@ def link_twitter_account(twitter_id: str,
     return dict(user), None
 
 
+def fetch_user_info(username: str, social: str) -> Tuple[dict, Optional[Error]]:
+    if social == "id":
+        sql = "select * from users where user_id = %s"
+    elif social == "google":
+        sql = "select * from users where google_id = %s"
+    elif social == "twitter":
+        sql = "select * from users where twitter_name = %s"
+    else:
+        return {}, Error(400, "The field `social` must be id, google or twitter.")
+    with open_pg() as conn:
+        with open_cursor(conn) as cur:
+            cur.execute(sql, (username,))
+            user = cur.fetchone()
+            if user is None:
+                return {}, Error(404, f"User {username} does not exist.")
+    return dict(user), None
+
+
 def fetch_twitter_info(user_id: str) -> Tuple[dict, Optional[Error]]:
     with open_pg() as conn:
         with open_cursor(conn) as cur:

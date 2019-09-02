@@ -5,8 +5,8 @@ from bottle import HTTPResponse, template
 
 from typing import Dict, Union
 
-from http_elements import post_validation, json_response
-from db import sign_up
+from http_elements import post_validation, json_response, Error
+from db import sign_up, fetch_user_info
 import twitter_api
 import calendar_api
 import map_api
@@ -27,6 +27,28 @@ def post_sign_up() -> HTTPResponse:
     user, err = sign_up(user.get("name"), user.get("google"), user.get("twitter"))
     if err:
         return err.response
+    return json_response(200, user, user["user_id"])
+
+
+@route("/login", method=["GET", "POST"])
+def post_login() -> HTTPResponse:
+    *_, err = post_validation(request)
+    if err:
+        return err.response
+    body = request.json
+    google = body.get("google")
+    if google:
+        user, err = fetch_user_info(google, "google")
+        if err:
+            return err.response
+    else:
+        twitter = body.get("twitter")
+        if twitter is not None:
+            user, err = fetch_user_info(twitter, "twitter")
+            if err:
+                return err.response
+        else:
+            return Error(400, "Either google or twitter is required.").response
     return json_response(200, user, user["user_id"])
 
 

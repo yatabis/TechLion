@@ -1,6 +1,6 @@
 import json
 import os
-from bottle import route, run, request
+from bottle import route, run, request, response
 from bottle import HTTPResponse, template
 
 from typing import Dict, Union
@@ -10,6 +10,8 @@ from db import sign_up
 import twitter_api
 import calendar_api
 import map_api
+
+PASSWORD = os.environ.get("PASSWORD")
 
 
 @route("/")
@@ -25,6 +27,7 @@ def post_sign_up() -> HTTPResponse:
     user, err = sign_up(user.get("name"), user.get("google"), user.get("twitter"))
     if err:
         return err.response
+    response.set_cookie("user_id", user["user_id"], secret=PASSWORD, max_age=3600 * 24 * 7)
     return json_response(200, user)
 
 

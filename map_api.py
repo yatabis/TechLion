@@ -66,7 +66,6 @@ def get_weather(lat: int = None, lng: int = None) -> HTTPResponse:
         return Error(400, "lng must be a real number between -180 and 180").response
     weather_get_url = f"http://api.openweathermap.org/data/2.5/weather?APPID={WEATHER_API_KEY}&lat={lat}&lon={lng}"
     req = requests.get(weather_get_url)
-    print(req.json())
     if req.status_code != 200:
         return Error(req.status_code, req.json()).response
     body = req.json()
@@ -79,7 +78,3 @@ def get_weather(lat: int = None, lng: int = None) -> HTTPResponse:
         "temp": int(body["main"]["temp"] - 273.15),
         "humid": body["main"]["humidity"]
     })
-
-
-if __name__ == '__main__':
-    print(float_check("72", 90))

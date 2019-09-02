@@ -67,7 +67,6 @@ def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[requests.Response
 @route("/twitter/today", method=["GET", "POST"])
 def get_twitter_today() -> HTTPResponse:
     user = request.get_cookie("user_id", secret=PASSWORD)
-    print(user)
     q = request.params.q
     *_, err = get_validation(request)
     if err:
@@ -140,7 +139,6 @@ def get_twitter_today_detail() -> HTTPResponse:
 
 @route("/twitter/login", method=["GET", "POST"])
 def twitter_login():
-    user = request.get_cookie("user_id", secret=PASSWORD)
     *_, err = post_validation(request)
     if err:
         return err.response

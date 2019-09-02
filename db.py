@@ -196,6 +196,8 @@ def fetch_google_token(user_id: str) -> Tuple[dict, Optional[Error]]:
             token = cur.fetchone()
             if token is None:
                 return {}, Error(404, f"User {user_id} does not exist.")
+            if token["google_access_token"] is None:
+                return {}, Error(403, f"User {user_id} is not linked to Google account.")
     google_token = {
         "id": token["google_id"],
         "access_token": decrypt(token.get("google_access_token"), PASSWORD),

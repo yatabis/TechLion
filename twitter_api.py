@@ -24,6 +24,7 @@ SUCCESS_URL = os.environ.get("SUCCESS_URL")
 ERROR_URL = os.environ.get("TWITTER_ERROR_URL")
 CK = os.environ.get("CONSUMER_API_KEY")
 CS = os.environ.get("CONSUMER_API_SECRET_KEY")
+PASSWORD = os.environ.get("PASSWORD")
 
 MORNING = ["おは", "お早う", "おはやう", "おきた", "起きた"]
 NIGHT = ["おやすみ", "お休み", "ねる", "寝る", "ねます", "寝ます"]
@@ -65,8 +66,10 @@ def get_new_tweets(oauth: OAuth1Session, latest: int) -> Tuple[requests.Response
 
 @route("/twitter/today", method=["GET", "POST"])
 def get_twitter_today() -> HTTPResponse:
+    user = request.get_cookie("user_id", secret=PASSWORD)
+    print(user)
     q = request.params.q
-    user, err = get_validation(request, "user")
+    *_, err = get_validation(request)
     if err:
         return err.response
     if user is None:
@@ -88,7 +91,8 @@ def get_twitter_today() -> HTTPResponse:
 
 @route("/twitter/today/detail", method=["GET", "POST"])
 def get_twitter_today_detail() -> HTTPResponse:
-    user, err = get_validation(request, "user")
+    user = request.get_cookie("user_id", secret=PASSWORD)
+    *_, err = get_validation(request)
     if err:
         return err.response
     if user is None:
@@ -136,7 +140,8 @@ def get_twitter_today_detail() -> HTTPResponse:
 
 @route("/twitter/login", method=["GET", "POST"])
 def twitter_login():
-    user, err = post_validation(request, "user")
+    user = request.get_cookie("user_id", secret=PASSWORD)
+    *_, err = post_validation(request)
     if err:
         return err.response
     oauth_session = OAuth1Session(client_key=CK, client_secret=CS, callback_uri=CALLBACK_URL)

@@ -45,5 +45,5 @@ def json_response(status_code: int, body: dict, cookie: str = None) -> HTTPRespo
     response = HTTPResponse(status=status_code, body=json.dumps(body, ensure_ascii=False))
     response.set_header("Content-Type", "application/json")
     if cookie is not None:
-        response.set_cookie("user_id", cookie, secret=PASSWORD, max_age=60*60*24*7)
+        response.set_cookie("user_id", cookie, max_age=60*60*24*7)
     return response

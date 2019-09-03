@@ -91,6 +91,7 @@ def get_twitter_today() -> HTTPResponse:
 @route("/twitter/today/detail", method=["GET", "POST"])
 def get_twitter_today_detail() -> HTTPResponse:
     user = request.get_cookie("user_id")  # , secret=PASSWORD)
+    q = request.params.q
     *_, err = get_validation(request)
     if err:
         return err.response
@@ -124,7 +125,7 @@ def get_twitter_today_detail() -> HTTPResponse:
             detail["morning"].append(tw)
             used.add(idx)
         if sum([t in tw["text"] for t in NIGHT]) > 0:
-            detail["nignt"].append(tw)
+            detail["night"].append(tw)
             used.add(idx)
         if sum([t in tw["text"] for t in BREAKFAST]) > 0:
             detail["breakfast"].append(tw)
@@ -141,6 +142,8 @@ def get_twitter_today_detail() -> HTTPResponse:
                 used.add(idx)
         if idx not in used:
             detail["other"].append(tw)
+    if q != "":
+        detail = detail[q]
     return json_response(200, detail)
 
 

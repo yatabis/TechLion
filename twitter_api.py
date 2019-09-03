@@ -143,7 +143,7 @@ def get_twitter_today_detail() -> HTTPResponse:
         if idx not in used:
             detail["other"].append(tw)
     if q != "":
-        detail = detail[q]
+        detail = detail.get(q, {})
     return json_response(200, detail)
 
 
